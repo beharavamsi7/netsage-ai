@@ -1,0 +1,189 @@
+{
+  "devices": [
+    {
+      "name": "R1",
+      "hostname": "R1",
+      "default_gateway": null,
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "ip_address": "192.168.10.1",
+          "subnet_mask": "255.255.255.0",
+          "status": "up",
+          "description": "VLAN 10 gateway"
+        },
+        {
+          "name": "GigabitEthernet0/1",
+          "ip_address": "10.0.0.1",
+          "subnet_mask": "255.255.255.252",
+          "status": "up",
+          "description": "WAN to R2"
+        },
+        {
+          "name": "GigabitEthernet0/2",
+          "ip_address": "172.16.0.1",
+          "subnet_mask": "255.255.0.0",
+          "status": "admin-down",
+          "description": "Backup link (disabled)"
+        }
+      ],
+      "routes": [
+        {
+          "destination": "0.0.0.0",
+          "mask": "0.0.0.0",
+          "next_hop": "10.0.0.2",
+          "administrative_distance": 1,
+          "metric": 0
+        },
+        {
+          "destination": "192.168.20.0",
+          "mask": "255.255.255.0",
+          "next_hop": "10.0.0.2",
+          "administrative_distance": 1,
+          "metric": 0
+        }
+      ],
+      "vlans": [
+        { "id": 10, "name": "USERS" },
+        { "id": 20, "name": "SERVERS" }
+      ]
+    },
+    {
+      "name": "R2",
+      "hostname": "R2",
+      "default_gateway": null,
+      "interfaces": [
+        {
+          "name": "GigabitEthernet0/0",
+          "ip_address": "10.0.0.2",
+          "subnet_mask": "255.255.255.252",
+          "status": "up",
+          "description": "WAN to R1"
+        },
+        {
+          "name": "GigabitEthernet0/1",
+          "ip_address": "192.168.20.1",
+          "subnet_mask": "255.255.255.0",
+          "status": "up",
+          "description": "VLAN 20 gateway"
+        },
+        {
+          "name": "GigabitEthernet0/2",
+          "ip_address": "192.168.10.1",
+          "subnet_mask": "255.255.255.0",
+          "status": "up",
+          "description": "DUPLICATE IP — should be unique"
+        }
+      ],
+      "routes": [
+        {
+          "destination": "0.0.0.0",
+          "mask": "0.0.0.0",
+          "next_hop": "10.0.0.1",
+          "administrative_distance": 1,
+          "metric": 0
+        },
+        {
+          "destination": "192.168.10.0",
+          "mask": "255.255.255.0",
+          "next_hop": "10.0.0.1",
+          "administrative_distance": 1,
+          "metric": 0
+        }
+      ],
+      "vlans": [
+        { "id": 10, "name": "USERS" },
+        { "id": 20, "name": "SERVERS" },
+        { "id": 30, "name": "MANAGEMENT" }
+      ]
+    },
+    {
+      "name": "SW1",
+      "hostname": "SW1",
+      "default_gateway": "192.168.10.1",
+      "interfaces": [
+        {
+          "name": "Vlan10",
+          "ip_address": "192.168.10.2",
+          "subnet_mask": "255.255.255.0",
+          "status": "up",
+          "vlan": 10,
+          "description": "Management VLAN"
+        },
+        {
+          "name": "Vlan99",
+          "ip_address": "192.168.99.2",
+          "subnet_mask": "255.255.255.0",
+          "status": "up",
+          "vlan": 99,
+          "description": "Native VLAN"
+        },
+        {
+          "name": "FastEthernet0/1",
+          "status": "admin-down",
+          "description": "Trunk to R1"
+        },
+        {
+          "name": "FastEthernet0/2",
+          "ip_address": "192.168.10.50",
+          "subnet_mask": "255.255.255.255",
+          "status": "up",
+          "vlan": 10,
+          "description": "Server port with /32 mask"
+        }
+      ],
+      "routes": [],
+      "vlans": [
+        { "id": 10, "name": "USERS" },
+        { "id": 20, "name": "SERVERS" }
+      ]
+    },
+    {
+      "name": "SW2",
+      "hostname": "SW2",
+      "default_gateway": "192.168.20.1",
+      "interfaces": [
+        {
+          "name": "Vlan20",
+          "ip_address": "192.168.20.2",
+          "subnet_mask": "255.255.255.0",
+          "status": "up",
+          "vlan": 20,
+          "description": "Management VLAN"
+        },
+        {
+          "name": "FastEthernet0/1",
+          "status": "up",
+          "vlan": 30,
+          "description": "Port in VLAN 30"
+        },
+        {
+          "name": "FastEthernet0/2",
+          "status": "up",
+          "vlan": 40,
+          "description": "Port in VLAN 40"
+        }
+      ],
+      "routes": [],
+      "vlans": [
+        { "id": 20, "name": "SERVERS" }
+      ]
+    },
+    {
+      "name": "PC1",
+      "hostname": "PC1",
+      "default_gateway": "192.168.10.254",
+      "interfaces": [
+        {
+          "name": "Nic0",
+          "ip_address": "192.168.10.10",
+          "subnet_mask": "255.255.255.0",
+          "status": "up",
+          "description": "Primary NIC"
+        }
+      ],
+      "routes": [],
+      "vlans": []
+    }
+  ]
+}
