@@ -17,7 +17,7 @@ import { geminiProvider } from "./gemini-provider";
 
 let activeProviderName: "gemini-flash" | "mock-v1" = "mock-v1";
 
-/** Return the name of the provider that last served a diagnosis. */
+/** Return the name of the currently active provider. */
 export function getProviderName(): string {
   return activeProviderName;
 }
