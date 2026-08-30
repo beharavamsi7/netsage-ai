@@ -14,8 +14,8 @@ import {
   diagnose,
   getDiagnosisProvider,
   type DiagnosisResponse,
-  type DiagnosisReview,
 } from "@/lib/ai";
+import { useReviews } from "@/lib/reviews";
 import {
   BrainCircuit,
   Terminal,
@@ -62,7 +62,13 @@ export default function Troubleshooter() {
   const [error, setError] = useState<string | null>(null);
 
   // Review state
-  const [review, setReview] = useState<DiagnosisReview | null>(null);
+  const { submitReview } = useReviews();
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewDecision, setReviewDecision] = useState<"accepted" | "edited" | "rejected" | null>(null);
+  const [correctedRootCause, setCorrectedRootCause] = useState("");
+  const [correctionExplanation, setCorrectionExplanation] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [reviewerNote, setReviewerNote] = useState("");
 
   const handleDiagnose = async () => {
     // Validate
@@ -73,7 +79,8 @@ export default function Troubleshooter() {
 
     setError(null);
     setDiagnosis(null);
-    setReview(null);
+    setReviewSubmitted(false);
+    setReviewDecision(null);
     setIsLoading(true);
 
     try {
@@ -90,18 +97,40 @@ export default function Troubleshooter() {
     }
   };
 
-  const handleReview = (action: "accepted" | "edited" | "rejected") => {
-    if (!diagnosis) return;
-    setReview({
-      diagnosis,
-      action,
-      timestamp: Date.now(),
+  const handleReviewSelect = (action: "accepted" | "edited" | "rejected") => {
+    setReviewDecision(action);
+    // Reset sub-fields
+    setCorrectedRootCause("");
+    setCorrectionExplanation("");
+    setRejectionReason("");
+  };
+
+  const handleSubmitReview = () => {
+    if (!diagnosis || !reviewDecision) return;
+
+    submitReview({
+      caseId: `DIAG-${Date.now().toString(36).toUpperCase()}`,
+      aiRootCause: diagnosis.root_cause,
+      aiConfidence: diagnosis.confidence,
+      aiFixSteps: diagnosis.fix_steps,
+      decision: reviewDecision,
+      correctedRootCause: reviewDecision === "edited" ? correctedRootCause : undefined,
+      correctionExplanation: reviewDecision === "edited" ? correctionExplanation : undefined,
+      rejectionReason: reviewDecision === "rejected" ? rejectionReason : undefined,
+      reviewerNote: reviewerNote || undefined,
     });
+
+    setReviewSubmitted(true);
   };
 
   const handleReset = () => {
     setDiagnosis(null);
-    setReview(null);
+    setReviewSubmitted(false);
+    setReviewDecision(null);
+    setCorrectedRootCause("");
+    setCorrectionExplanation("");
+    setRejectionReason("");
+    setReviewerNote("");
     setError(null);
   };
 
@@ -377,34 +406,25 @@ export default function Troubleshooter() {
                     Human Review
                   </h3>
 
-                  {review ? (
+                  {reviewSubmitted ? (
                     <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/40 border border-border/50">
-                      {review.action === "accepted" && (
-                        <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
-                      )}
-                      {review.action === "edited" && (
-                        <Pencil className="size-4 text-amber-500 shrink-0" />
-                      )}
-                      {review.action === "rejected" && (
-                        <XCircle className="size-4 text-rose-500 shrink-0" />
-                      )}
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
                       <div>
                         <p className="text-xs font-medium">
-                          Diagnosis {review.action}
+                          Review submitted
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          Recorded at{" "}
-                          {new Date(review.timestamp).toLocaleTimeString()}
+                          This diagnosis has been recorded in the review system.
                         </p>
                       </div>
                     </div>
-                  ) : (
+                  ) : !reviewDecision ? (
                     <div className="flex gap-2">
                       <Button
                         size="sm"
                         variant="outline"
                         className="gap-1.5 text-xs"
-                        onClick={() => handleReview("accepted")}
+                        onClick={() => handleReviewSelect("accepted")}
                       >
                         <CheckCircle2 className="size-3.5" />
                         Accept
@@ -413,7 +433,7 @@ export default function Troubleshooter() {
                         size="sm"
                         variant="outline"
                         className="gap-1.5 text-xs"
-                        onClick={() => handleReview("edited")}
+                        onClick={() => handleReviewSelect("edited")}
                       >
                         <Pencil className="size-3.5" />
                         Edit
@@ -422,10 +442,101 @@ export default function Troubleshooter() {
                         size="sm"
                         variant="outline"
                         className="gap-1.5 text-xs"
-                        onClick={() => handleReview("rejected")}
+                        onClick={() => handleReviewSelect("rejected")}
                       >
                         <XCircle className="size-3.5" />
                         Reject
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* Decision selected — show details form */}
+                      <div className="flex items-center gap-2">
+                        {reviewDecision === "accepted" && (
+                          <CheckCircle2 className="size-3.5 text-emerald-500" />
+                        )}
+                        {reviewDecision === "edited" && (
+                          <Pencil className="size-3.5 text-amber-500" />
+                        )}
+                        {reviewDecision === "rejected" && (
+                          <XCircle className="size-3.5 text-rose-500" />
+                        )}
+                        <span className="text-xs font-medium capitalize">
+                          Marking as {reviewDecision}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="ml-auto text-[10px] h-6"
+                          onClick={() => setReviewDecision(null)}
+                        >
+                          Change
+                        </Button>
+                      </div>
+
+                      {reviewDecision === "edited" && (
+                        <>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                              Corrected Root Cause
+                            </label>
+                            <Textarea
+                              placeholder="What is the correct root cause?"
+                              className="min-h-[80px] text-xs resize-none"
+                              value={correctedRootCause}
+                              onChange={(e) => setCorrectedRootCause(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                              Correction Explanation
+                            </label>
+                            <Textarea
+                              placeholder="Why was the AI diagnosis wrong or incomplete?"
+                              className="min-h-[60px] text-xs resize-none"
+                              value={correctionExplanation}
+                              onChange={(e) => setCorrectionExplanation(e.target.value)}
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {reviewDecision === "rejected" && (
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                            Rejection Reason
+                          </label>
+                          <Textarea
+                            placeholder="Why is the AI diagnosis incorrect?"
+                            className="min-h-[80px] text-xs resize-none"
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                          Reviewer Note (optional)
+                        </label>
+                        <Textarea
+                          placeholder="Additional notes for the audit log…"
+                          className="min-h-[50px] text-xs resize-none"
+                          value={reviewerNote}
+                          onChange={(e) => setReviewerNote(e.target.value)}
+                        />
+                      </div>
+
+                      <Button
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                        onClick={handleSubmitReview}
+                        disabled={
+                          (reviewDecision === "edited" && !correctedRootCause.trim()) ||
+                          (reviewDecision === "rejected" && !rejectionReason.trim())
+                        }
+                      >
+                        Submit Review
                       </Button>
                     </div>
                   )}

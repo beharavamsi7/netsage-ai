@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -15,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useReviews } from "@/lib/reviews";
 import {
   FolderOpen,
   CheckCircle2,
@@ -27,52 +29,6 @@ import {
   Wifi,
   Server,
 } from "lucide-react";
-
-// ─── Placeholder data (replace with real Convex queries later) ───────────────
-
-const STATS = [
-  {
-    label: "Total Cases",
-    value: 147,
-    icon: FolderOpen,
-    change: "+12 this week",
-  },
-  {
-    label: "AI Accepted",
-    value: 89,
-    icon: CheckCircle2,
-    change: "60.5%",
-    color: "text-emerald-600",
-  },
-  {
-    label: "AI Edited",
-    value: 31,
-    icon: Pencil,
-    change: "21.1%",
-    color: "text-amber-600",
-  },
-  {
-    label: "AI Rejected",
-    value: 27,
-    icon: XCircle,
-    change: "18.4%",
-    color: "text-rose-600",
-  },
-  {
-    label: "Rule Violations",
-    value: 18,
-    icon: ShieldAlert,
-    change: "12.2%",
-    color: "text-orange-600",
-  },
-  {
-    label: "AI–Human Agreement",
-    value: "82%",
-    icon: Handshake,
-    change: "+3.2% from last month",
-    color: "text-blue-600",
-  },
-];
 
 const ISSUE_TYPES = [
   { type: "VLAN misconfiguration", count: 34, pct: "23%" },
@@ -127,27 +83,6 @@ const RECENT_CASES = [
   },
 ];
 
-const AI_HUMAN_COMPARE = [
-  {
-    id: "CS-146",
-    aiOutput: "MTU mismatch on Gi0/1 — set to 1500 on both ends",
-    humanVerdict: "Partially correct — also a Hello timer mismatch",
-    agreement: "Edited",
-  },
-  {
-    id: "CS-145",
-    aiOutput: "Static route to 10.0.0.53 missing on default gateway",
-    humanVerdict: "Agreed — root cause confirmed",
-    agreement: "Accepted",
-  },
-  {
-    id: "CS-143",
-    aiOutput: "LACP mode mismatch: active vs passive",
-    humanVerdict: "Agreed — corrective action applied",
-    agreement: "Accepted",
-  },
-];
-
 const SYSTEM_STATUS = [
   { component: "AI Model", status: "Operational", icon: BrainIcon },
   { component: "Rule Engine", status: "Operational", icon: ShieldAlert },
@@ -174,9 +109,118 @@ function BrainIcon({ className }: { className?: string }) {
   );
 }
 
+// ─── Live Review List for Dashboard ─────────────────────────────────────────
+
+function DashboardReviewList() {
+  const { reviews } = useReviews();
+  const recent = reviews.slice(0, 5);
+
+  if (recent.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground py-4 text-center">
+        No reviews recorded yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {recent.map((r) => (
+        <div key={r.id} className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-xs font-medium">{r.caseId}</span>
+            <Badge
+              variant={
+                r.decision === "accepted"
+                  ? "default"
+                  : r.decision === "edited"
+                    ? "secondary"
+                    : "outline"
+              }
+              className="text-[10px]"
+            >
+              {r.decision}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+            {r.aiRootCause}
+          </p>
+          <Separator className="last:hidden" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Dashboard Component ─────────────────────────────────────────────────────
 
 export default function Dashboard() {
+  const { counts } = useReviews();
+
+  const agreementRate = useMemo(() => {
+    if (counts.total === 0) return 0;
+    return Math.round((counts.accepted / counts.total) * 100);
+  }, [counts]);
+
+  const stats = useMemo(
+    () => [
+      {
+        label: "Total Cases",
+        value: 30,
+        icon: FolderOpen,
+        change: "Dataset size",
+      },
+      {
+        label: "AI Accepted",
+        value: counts.accepted,
+        icon: CheckCircle2,
+        change:
+          counts.total > 0
+            ? `${Math.round((counts.accepted / counts.total) * 100)}%`
+            : "—",
+        color: "text-emerald-600",
+      },
+      {
+        label: "AI Edited",
+        value: counts.edited,
+        icon: Pencil,
+        change:
+          counts.total > 0
+            ? `${Math.round((counts.edited / counts.total) * 100)}%`
+            : "—",
+        color: "text-amber-600",
+      },
+      {
+        label: "AI Rejected",
+        value: counts.rejected,
+        icon: XCircle,
+        change:
+          counts.total > 0
+            ? `${Math.round((counts.rejected / counts.total) * 100)}%`
+            : "—",
+        color: "text-rose-600",
+      },
+      {
+        label: "Rule Violations",
+        value: 18,
+        icon: ShieldAlert,
+        change: "From rule checker",
+        color: "text-orange-600",
+      },
+      {
+        label: "AI–Human Agreement",
+        value: `${agreementRate}%`,
+        icon: Handshake,
+        change:
+          counts.total > 0
+            ? `${counts.accepted} of ${counts.total} reviewed`
+            : "No reviews yet",
+        color: "text-blue-600",
+      },
+    ],
+    [counts, agreementRate]
+  );
+
   return (
     <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8">
       {/* Page Header */}
@@ -189,7 +233,7 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {STATS.map((stat) => (
+        {stats.map((stat) => (
           <Card key={stat.label} className="border-border/50 py-4">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -289,35 +333,10 @@ export default function Dashboard() {
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle className="text-sm font-medium">AI vs Human Review</CardTitle>
-            <CardDescription>How the AI diagnoses compare with human evaluation</CardDescription>
+            <CardDescription>Latest review decisions on AI diagnoses</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {AI_HUMAN_COMPARE.map((item) => (
-                <div key={item.id} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-medium">{item.id}</span>
-                    <Badge
-                      variant={item.agreement === "Accepted" ? "default" : "secondary"}
-                      className="text-[10px]"
-                    >
-                      {item.agreement}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p>
-                      <span className="text-foreground font-medium">AI:</span>{" "}
-                      {item.aiOutput}
-                    </p>
-                    <p>
-                      <span className="text-foreground font-medium">Human:</span>{" "}
-                      {item.humanVerdict}
-                    </p>
-                  </div>
-                  <Separator className="last:hidden" />
-                </div>
-              ))}
-            </div>
+            <DashboardReviewList />
           </CardContent>
         </Card>
 
