@@ -1,43 +1,93 @@
-import type { DiagnosisProvider } from "./types";
+import type { DiagnosisProvider, DiagnosisRequest, DiagnosisResponse } from "./types";
 import { mockProvider } from "./mock-provider";
+import { geminiProvider } from "./gemini-provider";
 
 /**
  * AI Diagnosis Service
  *
- * This module is the single entry point for diagnosis. To swap providers:
- *   1. Implement the DiagnosisProvider interface in a new file.
- *   2. Import it here and assign it to `provider`.
+ * Provider selection:
+ *   1. If GEMINI_API_KEY is configured in Convex, use the Gemini provider.
+ *   2. If not configured or the call fails, fall back to the mock provider.
  *
- * The UI never imports a provider directly — it calls `diagnose()` from here.
+ * The UI calls `diagnose()` and `getProviderName()` from this module.
+ * It never imports a provider directly.
  */
 
-// ─── Active provider ─────────────────────────────────────────────────────────
+// ─── Provider state ──────────────────────────────────────────────────────────
 
-let provider: DiagnosisProvider = mockProvider;
+let activeProviderName: "gemini-flash" | "mock-v1" = "mock-v1";
 
-/** Replace the active diagnosis provider at runtime. */
-export function setDiagnosisProvider(next: DiagnosisProvider) {
-  provider = next;
+/** Return the name of the provider that last served a diagnosis. */
+export function getProviderName(): string {
+  return activeProviderName;
 }
-
-/** Return the currently active provider (useful for displaying the provider name). */
-export function getDiagnosisProvider(): DiagnosisProvider {
-  return provider;
-}
-
-// ─── Convenience wrapper ─────────────────────────────────────────────────────
 
 /**
- * Run a diagnosis through the active provider.
- * This is the only function the UI should call.
+ * Check whether a Gemini API key is likely configured.
+ * This probes the Convex action — if it throws because the key is
+ * missing, we know to use mock.
  */
-export async function diagnose(
-  request: import("./types").DiagnosisRequest
-): Promise<import("./types").DiagnosisResponse> {
-  return provider.diagnose(request);
+let geminiKeyAvailable: boolean | null = null;
+
+async function checkGeminiKey(): Promise<boolean> {
+  if (geminiKeyAvailable !== null) return geminiKeyAvailable;
+  try {
+    // A lightweight probe — we just try the action and catch the
+    // "key not configured" error.
+    const { api } = await import("@/convex/_generated/api");
+    const { ConvexReactClient } = await import("convex/react");
+    const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
+    const client = new ConvexReactClient(convexUrl);
+    await client.action(api.diagnose.run, {
+      symptoms: "__probe__",
+      packetTracerNotes: "",
+      showCommandOutput: "",
+    });
+    // If it didn't throw, the key is configured
+    geminiKeyAvailable = true;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    geminiKeyAvailable = !msg.includes("GEMINI_API_KEY");
+  }
+  return geminiKeyAvailable;
 }
 
-// ─── Re-export types for consumers ───────────────────────────────────────────
+// ─── Diagnose ────────────────────────────────────────────────────────────────
+
+/**
+ * Run a diagnosis through the best available provider.
+ *
+ * 1. Try Gemini if the key appears to be configured.
+ * 2. On any failure, fall back to the mock provider.
+ * 3. Return the diagnosis with `provider_name` so the UI can display it.
+ */
+export async function diagnose(
+  request: DiagnosisRequest
+): Promise<DiagnosisResponse & { provider_name: string }> {
+  const useGemini = await checkGeminiKey();
+
+  if (useGemini) {
+    try {
+      const result = await geminiProvider.diagnose(request);
+      activeProviderName = "gemini-flash";
+      return { ...result, provider_name: "gemini-flash" };
+    } catch (err) {
+      console.warn(
+        "[NetSage] Gemini diagnosis failed, falling back to mock:",
+        err instanceof Error ? err.message : err
+      );
+      // Reset so we re-probe next time
+      geminiKeyAvailable = false;
+    }
+  }
+
+  // Mock fallback
+  const result = await mockProvider.diagnose(request);
+  activeProviderName = "mock-v1";
+  return { ...result, provider_name: "mock-v1" };
+}
+
+// ─── Re-export types ─────────────────────────────────────────────────────────
 
 export type {
   DiagnosisRequest,

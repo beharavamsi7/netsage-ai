@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   diagnose,
-  getDiagnosisProvider,
+  getProviderName,
   type DiagnosisResponse,
 } from "@/lib/ai";
 import { useReviews } from "@/lib/reviews";
@@ -57,7 +57,7 @@ export default function Troubleshooter() {
   const [showCommands, setShowCommands] = useState("");
 
   // Diagnosis state
-  const [diagnosis, setDiagnosis] = useState<DiagnosisResponse | null>(null);
+  const [diagnosis, setDiagnosis] = useState<(DiagnosisResponse & { provider_name: string }) | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,8 +90,9 @@ export default function Troubleshooter() {
         showCommandOutput: showCommands.trim(),
       });
       setDiagnosis(result);
-    } catch {
-      setError("Diagnosis failed. Please try again.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setError(`Diagnosis failed: ${msg}`);
     } finally {
       setIsLoading(false);
     }
@@ -270,7 +271,7 @@ export default function Troubleshooter() {
                   analysis.
                 </p>
                 <p className="text-[10px] text-muted-foreground/50 mt-2 max-w-[260px]">
-                  Using provider: {getDiagnosisProvider().name}
+                  Provider: {getProviderName() === "gemini-flash" ? "Gemini (LLM)" : "Mock (keyword matching)"}
                 </p>
               </div>
             )}
@@ -550,7 +551,7 @@ export default function Troubleshooter() {
                     {diagnosis.processing_time_ms}ms
                   </span>
                   <span>•</span>
-                  <span>Provider: {getDiagnosisProvider().name}</span>
+                  <span>Provider: {diagnosis.provider_name === "gemini-flash" ? "Gemini" : "Mock"}</span>
                 </div>
               </div>
             )}
