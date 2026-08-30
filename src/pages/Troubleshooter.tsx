@@ -105,6 +105,10 @@ export default function Troubleshooter() {
     setRejectionReason("");
   };
 
+  const isSubmitDisabled =
+    (reviewDecision === "edited" && !correctedRootCause.trim()) ||
+    (reviewDecision === "rejected" && !rejectionReason.trim());
+
   const handleSubmitReview = () => {
     if (!diagnosis || !reviewDecision) return;
 
@@ -531,10 +535,7 @@ export default function Troubleshooter() {
                         size="sm"
                         className="gap-1.5 text-xs"
                         onClick={handleSubmitReview}
-                        disabled={
-                          (reviewDecision === "edited" && !correctedRootCause.trim()) ||
-                          (reviewDecision === "rejected" && !rejectionReason.trim())
-                        }
+                        disabled={isSubmitDisabled}
                       >
                         Submit Review
                       </Button>
