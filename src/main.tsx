@@ -12,7 +12,20 @@ import "./index.css";
 const Landing = lazy(() => import("./pages/Landing.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
+const Troubleshooter = lazy(() => import("./pages/Troubleshooter.tsx"));
+const Cases = lazy(() => import("./pages/Cases.tsx"));
+const RuleChecker = lazy(() => import("./pages/RuleChecker.tsx"));
+const HumanReview = lazy(() => import("./pages/HumanReview.tsx"));
+const ResponsibleAI = lazy(() => import("./pages/ResponsibleAI.tsx"));
+const Reports = lazy(() => import("./pages/Reports.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+
+// Lazy load layout shell
+const AppShell = lazy(() =>
+  import("./components/AppShell.tsx").then((m) => ({
+    default: m.AppShell,
+  }))
+);
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -79,16 +92,16 @@ class RootErrorBoundary extends React.Component<
   }
 }
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
-
-
+const convex = new ConvexReactClient(
+  import.meta.env.VITE_CONVEX_URL as string
+);
 
 function RouteSyncer() {
   const location = useLocation();
   useEffect(() => {
     window.parent.postMessage(
       { type: "iframe-route-change", path: location.pathname },
-      "*",
+      "*"
     );
   }, [location.pathname]);
 
@@ -106,7 +119,6 @@ function RouteSyncer() {
   return null;
 }
 
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <RootErrorBoundary>
@@ -123,11 +135,74 @@ createRoot(document.getElementById("root")!).render(
                 path="/auth"
                 element={<AuthPage redirectAfterAuth="/dashboard" />}
               />
+              {/* Protected dashboard routes wrapped in AppShell */}
               <Route
                 path="/dashboard"
                 element={
                   <RequireAuth>
-                    <Dashboard />
+                    <AppShell>
+                      <Dashboard />
+                    </AppShell>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/dashboard/troubleshooter"
+                element={
+                  <RequireAuth>
+                    <AppShell>
+                      <Troubleshooter />
+                    </AppShell>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/dashboard/cases"
+                element={
+                  <RequireAuth>
+                    <AppShell>
+                      <Cases />
+                    </AppShell>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/dashboard/rule-checker"
+                element={
+                  <RequireAuth>
+                    <AppShell>
+                      <RuleChecker />
+                    </AppShell>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/dashboard/review"
+                element={
+                  <RequireAuth>
+                    <AppShell>
+                      <HumanReview />
+                    </AppShell>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/dashboard/responsible-ai"
+                element={
+                  <RequireAuth>
+                    <AppShell>
+                      <ResponsibleAI />
+                    </AppShell>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/dashboard/reports"
+                element={
+                  <RequireAuth>
+                    <AppShell>
+                      <Reports />
+                    </AppShell>
                   </RequireAuth>
                 }
               />
@@ -138,5 +213,5 @@ createRoot(document.getElementById("root")!).render(
         <Toaster />
       </ConvexAuthProvider>
     </RootErrorBoundary>
-  </StrictMode>,
+  </StrictMode>
 );
