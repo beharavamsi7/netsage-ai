@@ -183,7 +183,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Overview of AI-assisted network troubleshooting activity
+          System overview and AI troubleshooting metrics
         </p>
       </div>
 
@@ -325,7 +325,7 @@ export default function Dashboard() {
         <Card className="border-border/50">
           <CardHeader>
             <CardTitle className="text-sm font-medium">System Status</CardTitle>
-            <CardDescription>Current health of platform components</CardDescription>
+            <CardDescription>Health of connected components</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -355,8 +355,8 @@ export default function Dashboard() {
             <div className="text-[10px] text-muted-foreground/60 leading-relaxed">
               <p>
                 <AlertTriangle className="inline size-3 mr-1" />
-                System status is placeholder data. Real-time monitoring will be
-                added in a future iteration.
+                Status indicators are placeholders. Live monitoring will be
+                connected when the backend is integrated.
               </p>
             </div>
           </CardContent>

@@ -1,25 +1,35 @@
+import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
+  const navigate = useNavigate();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen flex flex-col"
+      className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground"
     >
-
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="max-w-5xl mx-auto relative px-4">
-          <div className="flex items-center justify-center min-h-[200px]">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-              <p className="text-lg text-gray-600">Page Not Found</p>
-            </div>
-          </div>
-        </div>
+      <div className="text-center space-y-4">
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+          404
+        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Page not found
+        </h1>
+        <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+          The page you are looking for does not exist or has been moved.
+        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-4 text-muted-foreground"
+          onClick={() => navigate("/")}
+        >
+          Back to home
+        </Button>
       </div>
     </motion.div>
   );

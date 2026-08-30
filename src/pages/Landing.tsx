@@ -62,10 +62,10 @@ export default function Landing() {
             </div>
             <div>
               <span className="text-sm font-semibold tracking-tight">
-                NetSage AI
+                NetSage Dashboard
               </span>
               <span className="hidden sm:inline text-[10px] text-muted-foreground ml-2 uppercase tracking-widest">
-                Network Troubleshooter
+                Network Ops
               </span>
             </div>
           </div>
@@ -96,16 +96,16 @@ export default function Landing() {
             </div>
           </div>
           <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[1.1]">
-            Diagnose network issues
+            AI-assisted network
             <br />
             <span className="text-muted-foreground">
-              with AI precision
+              troubleshooting
             </span>
           </h1>
           <p className="mt-6 text-base text-muted-foreground leading-relaxed max-w-lg">
-            NetSage AI helps networking students troubleshoot Packet Tracer
-            scenarios using AI-generated diagnoses validated against best
-            practices and human expertise.
+            NetSage Dashboard is the control center for AI-driven network
+            diagnostics. It provides the structure, UI, and review workflow
+            that the AI engine, rule checker, and case dataset plug into.
           </p>
           <div className="flex items-center gap-3 mt-8">
             <Button
@@ -243,7 +243,7 @@ export default function Landing() {
             dataset.
           </p>
           <Button className="gap-1.5" onClick={() => navigate("/auth")}>
-            Open NetSage AI
+            Open NetSage Dashboard
             <ArrowRight className="size-4" />
           </Button>
         </div>
@@ -252,10 +252,10 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-border/50">
         <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between text-[10px] text-muted-foreground/60">
-          <span>NetSage AI — College Technical Project</span>
+          <span>NetSage Dashboard</span>
           <div className="flex items-center gap-1">
             <Wifi className="size-3" />
-            <span>Powered by AI + Human Expertise</span>
+            <span>AI + Human Expertise</span>
           </div>
         </div>
       </footer>

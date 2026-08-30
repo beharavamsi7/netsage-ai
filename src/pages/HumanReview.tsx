@@ -19,7 +19,7 @@ export default function HumanReview() {
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Expert review and validation of AI-generated diagnoses
+          Expert validation of AI-generated diagnoses against real scenarios
         </p>
       </div>
 
@@ -30,7 +30,7 @@ export default function HumanReview() {
             Review Queue
           </CardTitle>
           <CardDescription>
-            Cases awaiting human verification will appear here
+            Cases awaiting expert verification will appear here
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -39,10 +39,10 @@ export default function HumanReview() {
               <Eye className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground max-w-md">
-              The human review workflow will allow networking experts to review
-              AI diagnoses, mark them as accepted, edited, or rejected, and
-              provide feedback that improves future AI accuracy. This module
-              tracks agreement rates between AI and human evaluators.
+              The review workflow lets an expert evaluate each AI diagnosis,
+              mark it as accepted, edited, or rejected, and provide feedback
+              that feeds back into model improvement. Agreement rates between
+              AI and human evaluators are tracked here.
             </p>
           </div>
         </CardContent>

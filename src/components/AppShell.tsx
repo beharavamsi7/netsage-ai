@@ -143,10 +143,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <div className="group-data-[collapsible=icon]:hidden">
               <h1 className="text-sm font-semibold tracking-tight leading-none">
-                NetSage AI
+                NetSage Dashboard
               </h1>
               <p className="text-[10px] text-muted-foreground mt-0.5 tracking-wide uppercase">
-                Network Troubleshooter
+                Network Ops
               </p>
             </div>
           </div>
@@ -205,7 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <span className="text-xs text-muted-foreground font-medium tracking-wide uppercase">
-            NetSage AI
+            NetSage Dashboard
           </span>
         </header>
         <div className="flex-1 overflow-auto">

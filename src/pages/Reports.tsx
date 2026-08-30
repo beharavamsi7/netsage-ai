@@ -19,7 +19,7 @@ export default function Reports() {
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Analytics and reporting on AI troubleshooting performance
+          Performance analytics for AI diagnoses, review outcomes, and rule compliance
         </p>
       </div>
 
@@ -30,7 +30,7 @@ export default function Reports() {
             Analytics Dashboard
           </CardTitle>
           <CardDescription>
-            Charts and metrics will be generated from real case data
+            Metrics and charts will be generated from live case data
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -39,10 +39,10 @@ export default function Reports() {
               <BarChart3 className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground max-w-md">
-              The Reports module will include charts for AI acceptance rates over
-              time, most common issue types, rule violation trends, AI–human
-              agreement metrics, and per-case performance breakdowns. Built with
-              Recharts and connected to live Convex data.
+              Reports will include charts for AI acceptance rates over time,
+              most common issue types, rule violation trends, AI–human agreement
+              metrics, and per-case performance breakdowns. Built with Recharts
+              and connected to live Convex data.
             </p>
           </div>
         </CardContent>

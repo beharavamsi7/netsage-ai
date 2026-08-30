@@ -19,7 +19,7 @@ export default function ResponsibleAI() {
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Transparency and accountability logs for all AI decisions
+          Audit trail for every AI decision, confidence score, and human override
         </p>
       </div>
 
@@ -30,7 +30,7 @@ export default function ResponsibleAI() {
             Audit Trail
           </CardTitle>
           <CardDescription>
-            Complete log of AI actions, confidence scores, and human interventions
+            Full log of AI actions, confidence scores, and human overrides
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -39,11 +39,10 @@ export default function ResponsibleAI() {
               <ScrollText className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground max-w-md">
-              The Responsible AI module will log every AI action including input
-              data, model version, confidence scores, rule checker results, and
-              any human corrections. This provides a full audit trail for
-              accountability and supports the responsible AI principles required
-              for the project.
+              The Responsible AI module logs every AI action: input data, model
+              version, confidence scores, rule-checker results, and any human
+              corrections. It provides a complete audit trail for accountability
+              and supports the responsible-AI principles the project is built on.
             </p>
           </div>
         </CardContent>

@@ -19,7 +19,7 @@ export default function RuleChecker() {
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Python-based rule engine for validating AI diagnoses against network best practices
+          Rule engine for validating AI diagnoses against networking best practices
         </p>
       </div>
 
@@ -30,7 +30,7 @@ export default function RuleChecker() {
             Rule Engine
           </CardTitle>
           <CardDescription>
-            This module will enforce networking rules and Cisco best practices
+            This module enforces networking rules and Cisco best practices
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -39,10 +39,10 @@ export default function RuleChecker() {
               <ShieldCheck className="size-5 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground max-w-md">
-              The rule checker will validate AI-generated diagnoses against a set
-              of predefined networking rules (VLAN standards, OSPF best practices,
-              ACL logic, etc.). Implementation will include a Python backend
-              module that scores each diagnosis for rule compliance.
+              The rule checker validates AI-generated diagnoses against predefined
+              networking rules — VLAN standards, OSPF best practices, ACL logic,
+              and more. The Python backend scores each diagnosis for compliance
+              before it reaches the review queue.
             </p>
           </div>
         </CardContent>

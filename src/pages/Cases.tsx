@@ -38,7 +38,7 @@ export default function Cases() {
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Complete history of all network troubleshooting cases
+          Full case history across all AI-assisted troubleshooting sessions
         </p>
       </div>
 
@@ -49,7 +49,7 @@ export default function Cases() {
             Case Registry
           </CardTitle>
           <CardDescription>
-            The full dataset of 30+ cases will be loaded from the database in a future step
+            The full case dataset will be loaded from the database once the backend is connected
           </CardDescription>
         </CardHeader>
         <CardContent>

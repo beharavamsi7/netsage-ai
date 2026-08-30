@@ -29,14 +29,14 @@ export default function Troubleshooter() {
       <div>
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">
-            AI Troubleshooter
+            Troubleshooter
           </h1>
           <Badge variant="secondary" className="text-[10px] font-medium uppercase tracking-wide">
             Placeholder
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Describe your network issue and receive AI-assisted diagnosis
+          Submit a network symptom and receive an AI-generated diagnosis
         </p>
       </div>
 
@@ -131,10 +131,10 @@ export default function Troubleshooter() {
                       Placeholder Response
                     </p>
                     <p>
-                      This is a simulated output. The actual AI diagnosis engine
-                      has not been implemented yet. Real implementation will
-                      analyze symptoms, compare against the case dataset, and
-                      apply the rule checker before producing a diagnosis.
+                      This is a simulated output. The AI diagnosis engine
+                      is not wired up yet. When connected, it will analyze
+                      symptoms, cross-reference the case dataset, and run
+                      rule-check validation before returning a diagnosis.
                     </p>
                   </div>
                 </div>
@@ -148,8 +148,8 @@ export default function Troubleshooter() {
                     {symptoms
                       ? `Based on the described symptoms, the issue appears to be
                         related to VLAN configuration or Layer 2 connectivity.
-                        The AI would normally cross-reference this against
-                        ${147} known troubleshooting cases.`
+                        The AI engine will cross-reference this against
+                        the full case dataset.`
                       : "No symptoms provided."}
                   </p>
                 </div>
