@@ -12,6 +12,7 @@ import {
   Activity,
   Server,
   Wifi,
+  FileDown,
 } from "lucide-react";
 
 const FEATURES = [
@@ -252,7 +253,17 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-border/50">
         <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between text-[10px] text-muted-foreground/60">
-          <span>NetSage Dashboard</span>
+          <div className="flex items-center gap-4">
+            <span>NetSage Dashboard</span>
+            <a
+              href="/NetSageAI_Project_Summary.pdf"
+              download
+              className="flex items-center gap-1 text-muted-foreground/80 hover:text-foreground transition-colors"
+            >
+              <FileDown className="size-3" />
+              <span>Project Summary (PDF)</span>
+            </a>
+          </div>
           <div className="flex items-center gap-1">
             <Wifi className="size-3" />
             <span>AI + Human Expertise</span>
