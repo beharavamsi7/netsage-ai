@@ -16,7 +16,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { cases, ALL_CATEGORIES, countByCategory, countBySeverity } from "@/lib/cases";
 import { useReviews } from "@/lib/reviews";
+import { SAMPLE_REPORT } from "@/lib/rule-checker/sample-output";
 import {
   FolderOpen,
   CheckCircle2,
@@ -30,86 +47,60 @@ import {
   Server,
 } from "lucide-react";
 
-const ISSUE_TYPES = [
-  { type: "VLAN misconfiguration", count: 34, pct: "23%" },
-  { type: "OSPF neighbor down", count: 28, pct: "19%" },
-  { type: "ACL blocking traffic", count: 22, pct: "15%" },
-  { type: "DHCP not assigning IP", count: 19, pct: "13%" },
-  { type: "Spanning-tree convergence", count: 16, pct: "11%" },
-  { type: "NAT translation failure", count: 14, pct: "10%" },
-  { type: "Other", count: 14, pct: "10%" },
-];
+// ─── Derived data ────────────────────────────────────────────────────────────
 
-const RECENT_CASES = [
-  {
-    id: "CS-147",
-    title: "VLAN 10 unreachable on Switch3",
-    status: "Resolved",
-    statusVariant: "default" as const,
-    date: "2026-08-30",
-    aiVerdict: "Accepted",
-  },
-  {
-    id: "CS-146",
-    title: "OSPF adjacency flapping between R1-R2",
-    status: "In Review",
-    statusVariant: "secondary" as const,
-    date: "2026-08-30",
-    aiVerdict: "Edited",
-  },
-  {
-    id: "CS-145",
-    title: "Hosts cannot reach DNS server 10.0.0.53",
-    status: "Resolved",
-    statusVariant: "default" as const,
-    date: "2026-08-29",
-    aiVerdict: "Accepted",
-  },
-  {
-    id: "CS-144",
-    title: "Inter-VLAN routing broken after config change",
-    status: "Open",
-    statusVariant: "outline" as const,
-    date: "2026-08-29",
-    aiVerdict: "Pending",
-  },
-  {
-    id: "CS-143",
-    title: "Port-channel not forming between switches",
-    status: "Resolved",
-    statusVariant: "default" as const,
-    date: "2026-08-28",
-    aiVerdict: "Accepted",
-  },
-];
+const CATEGORY_COLORS: Record<string, string> = {
+  VLAN: "#6366f1",
+  "Default Gateway": "#8b5cf6",
+  DHCP: "#06b6d4",
+  DNS: "#14b8a6",
+  Routing: "#3b82f6",
+  ACL: "#f43f5e",
+  NAT: "#f97316",
+  Wireless: "#22c55e",
+};
 
-const SYSTEM_STATUS = [
-  { component: "AI Model", status: "Operational", icon: BrainIcon },
-  { component: "Rule Engine", status: "Operational", icon: ShieldAlert },
-  { component: "Case Database", status: "Operational", icon: Server },
-  { component: "Network Monitor", status: "Degraded", icon: Wifi },
-  { component: "Review Queue", status: "Operational", icon: Activity },
-];
+const SEVERITY_COLORS: Record<string, string> = {
+  Critical: "#f43f5e",
+  High: "#f97316",
+  Medium: "#eab308",
+  Low: "#22c55e",
+};
 
-function BrainIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
-      <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
-      <path d="M12 5v14" />
-    </svg>
-  );
-}
+const REVIEW_COLORS: Record<string, string> = {
+  accepted: "#22c55e",
+  edited: "#eab308",
+  rejected: "#f43f5e",
+};
 
-// ─── Live Review List for Dashboard ─────────────────────────────────────────
+// ─── Charts config ───────────────────────────────────────────────────────────
+
+const categoryChartConfig = {
+  count: { label: "Cases" },
+  ...Object.fromEntries(
+    ALL_CATEGORIES.map((cat) => [
+      cat,
+      { label: cat, color: CATEGORY_COLORS[cat] },
+    ])
+  ),
+} satisfies ChartConfig;
+
+const severityChartConfig = {
+  count: { label: "Cases" },
+  Critical: { label: "Critical", color: SEVERITY_COLORS.Critical },
+  High: { label: "High", color: SEVERITY_COLORS.High },
+  Medium: { label: "Medium", color: SEVERITY_COLORS.Medium },
+  Low: { label: "Low", color: SEVERITY_COLORS.Low },
+} satisfies ChartConfig;
+
+const reviewChartConfig = {
+  value: { label: "Reviews" },
+  accepted: { label: "Accepted", color: REVIEW_COLORS.accepted },
+  edited: { label: "Edited", color: REVIEW_COLORS.edited },
+  rejected: { label: "Rejected", color: REVIEW_COLORS.rejected },
+} satisfies ChartConfig;
+
+// ─── Live Review List ────────────────────────────────────────────────────────
 
 function DashboardReviewList() {
   const { reviews } = useReviews();
@@ -152,10 +143,44 @@ function DashboardReviewList() {
   );
 }
 
+// ─── System Status ───────────────────────────────────────────────────────────
+
+const SYSTEM_STATUS = [
+  { component: "AI Model", status: "Operational", icon: BrainIcon },
+  { component: "Rule Engine", status: "Operational", icon: ShieldAlert },
+  { component: "Case Database", status: "Operational", icon: Server },
+  { component: "Network Monitor", status: "Degraded", icon: Wifi },
+  { component: "Review Queue", status: "Operational", icon: Activity },
+];
+
+function BrainIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+      <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+      <path d="M12 5v14" />
+    </svg>
+  );
+}
+
 // ─── Dashboard Component ─────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const { counts } = useReviews();
+
+  // Real data calculations
+  const categoryCounts = useMemo(() => countByCategory(), []);
+  const severityCounts = useMemo(() => countBySeverity(), []);
+  const ruleCheckerErrors = SAMPLE_REPORT.errors;
+  const ruleCheckerWarnings = SAMPLE_REPORT.warnings;
 
   const agreementRate = useMemo(() => {
     if (counts.total === 0) return 0;
@@ -166,7 +191,7 @@ export default function Dashboard() {
     () => [
       {
         label: "Total Cases",
-        value: 30,
+        value: cases.length,
         icon: FolderOpen,
         change: "Dataset size",
       },
@@ -202,9 +227,9 @@ export default function Dashboard() {
       },
       {
         label: "Rule Violations",
-        value: 18,
+        value: ruleCheckerErrors,
         icon: ShieldAlert,
-        change: "From rule checker",
+        change: `${ruleCheckerWarnings} warnings`,
         color: "text-orange-600",
       },
       {
@@ -218,8 +243,38 @@ export default function Dashboard() {
         color: "text-blue-600",
       },
     ],
-    [counts, agreementRate]
+    [counts, agreementRate, ruleCheckerErrors, ruleCheckerWarnings]
   );
+
+  // Chart data
+  const categoryChartData = useMemo(
+    () =>
+      ALL_CATEGORIES.map((cat) => ({
+        category: cat,
+        count: categoryCounts[cat] ?? 0,
+        fill: CATEGORY_COLORS[cat],
+      })),
+    [categoryCounts]
+  );
+
+  const severityChartData = useMemo(
+    () =>
+      (["Critical", "High", "Medium", "Low"] as const).map((sev) => ({
+        severity: sev,
+        count: severityCounts[sev] ?? 0,
+        fill: SEVERITY_COLORS[sev],
+      })),
+    [severityCounts]
+  );
+
+  const reviewChartData = useMemo(() => {
+    const data = [
+      { name: "accepted", value: counts.accepted, fill: REVIEW_COLORS.accepted },
+      { name: "edited", value: counts.edited, fill: REVIEW_COLORS.edited },
+      { name: "rejected", value: counts.rejected, fill: REVIEW_COLORS.rejected },
+    ];
+    return data.filter((d) => d.value > 0);
+  }, [counts]);
 
   return (
     <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8">
@@ -249,94 +304,152 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Main Content Grid */}
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Issue Types */}
-        <Card className="border-border/50 lg:col-span-1">
+        {/* Cases by Category */}
+        <Card className="border-border/50">
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Issue Types</CardTitle>
-            <CardDescription>Top network problem categories</CardDescription>
+            <CardTitle className="text-sm font-medium">Cases by Category</CardTitle>
+            <CardDescription>Distribution across networking topics</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {ISSUE_TYPES.map((issue) => (
-                <div key={issue.type} className="flex items-center justify-between">
-                  <span className="text-sm truncate flex-1 mr-3">{issue.type}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground tabular-nums">{issue.count}</span>
-                    <span className="text-[10px] text-muted-foreground/60 tabular-nums w-7 text-right">
-                      {issue.pct}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ChartContainer config={categoryChartConfig} className="h-[220px] w-full">
+              <BarChart
+                data={categoryChartData}
+                layout="vertical"
+                margin={{ left: 0, right: 8 }}
+              >
+                <YAxis
+                  dataKey="category"
+                  type="category"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  width={100}
+                />
+                <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {categoryChartData.map((entry) => (
+                    <Cell key={entry.category} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
 
-        {/* Recent Cases */}
-        <Card className="border-border/50 lg:col-span-2">
+        {/* Severity Distribution */}
+        <Card className="border-border/50">
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Recent Troubleshooting Cases</CardTitle>
-            <CardDescription>Latest cases processed through the system</CardDescription>
+            <CardTitle className="text-sm font-medium">Severity Distribution</CardTitle>
+            <CardDescription>Case severity breakdown</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-[10px] uppercase tracking-wider">Case</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider">Issue</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider">Status</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider">AI Verdict</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider text-right">Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {RECENT_CASES.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-mono text-xs font-medium">{c.id}</TableCell>
-                    <TableCell className="text-sm max-w-[240px] truncate">{c.title}</TableCell>
-                    <TableCell>
-                      <Badge variant={c.statusVariant} className="text-[10px]">
-                        {c.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`text-xs ${
-                          c.aiVerdict === "Accepted"
-                            ? "text-emerald-600"
-                            : c.aiVerdict === "Edited"
-                              ? "text-amber-600"
-                              : c.aiVerdict === "Rejected"
-                                ? "text-rose-600"
-                                : "text-muted-foreground"
-                        }`}
-                      >
-                        {c.aiVerdict}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground text-right tabular-nums">
-                      {c.date}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <ChartContainer config={severityChartConfig} className="h-[220px] w-full">
+              <BarChart data={severityChartData} margin={{ left: 0, right: 8 }}>
+                <XAxis
+                  dataKey="severity"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {severityChartData.map((entry) => (
+                    <Cell key={entry.severity} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* AI vs Human Review */}
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">AI vs Human Review</CardTitle>
+            <CardDescription>Review outcomes on AI diagnoses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {reviewChartData.length > 0 ? (
+              <ChartContainer config={reviewChartConfig} className="h-[220px] w-full">
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                  <Pie
+                    data={reviewChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    strokeWidth={2}
+                  >
+                    {reviewChartData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[220px] text-xs text-muted-foreground">
+                No review data yet
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* AI vs Human Review */}
+        {/* Recent Cases */}
         <Card className="border-border/50">
           <CardHeader>
-            <CardTitle className="text-sm font-medium">AI vs Human Review</CardTitle>
-            <CardDescription>Latest review decisions on AI diagnoses</CardDescription>
+            <CardTitle className="text-sm font-medium">Recent Cases</CardTitle>
+            <CardDescription>Latest entries from the case dataset</CardDescription>
           </CardHeader>
           <CardContent>
-            <DashboardReviewList />
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-[10px] uppercase tracking-wider">Case</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider">Title</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider">Category</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider">Severity</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cases.slice(-5).reverse().map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-mono text-xs font-medium">{c.id}</TableCell>
+                    <TableCell className="text-sm max-w-[200px] truncate">{c.title}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[9px]">
+                        {c.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] ${
+                          c.severity === "Critical"
+                            ? "text-rose-500 border-rose-500/30"
+                            : c.severity === "High"
+                              ? "text-orange-500 border-orange-500/30"
+                              : c.severity === "Medium"
+                                ? "text-amber-500 border-amber-500/30"
+                                : "text-emerald-500 border-emerald-500/30"
+                        }`}
+                      >
+                        {c.severity}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
@@ -371,11 +484,40 @@ export default function Dashboard() {
 
             <Separator className="my-5" />
 
+            {/* Rule Checker Summary */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Rule Checker (Sample Run)
+              </h4>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-lg font-semibold text-emerald-500 tabular-nums">
+                    {SAMPLE_REPORT.passed}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground uppercase">Passed</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-amber-500 tabular-nums">
+                    {SAMPLE_REPORT.warnings}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground uppercase">Warnings</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-rose-500 tabular-nums">
+                    {SAMPLE_REPORT.errors}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground uppercase">Errors</p>
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-5" />
+
             <div className="text-[10px] text-muted-foreground/60 leading-relaxed">
               <p>
                 <AlertTriangle className="inline size-3 mr-1" />
-                Status indicators are placeholders. Live monitoring will be
-                connected when the backend is integrated.
+                Rule checker results are from a sample 5-device topology.
+                Live monitoring will be connected when the backend is integrated.
               </p>
             </div>
           </CardContent>
