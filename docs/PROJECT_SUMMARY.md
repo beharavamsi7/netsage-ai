@@ -451,7 +451,9 @@ patterns.
 ## 11. Packet Tracer Demonstration
 
 The following walkthrough demonstrates the complete NetSage AI workflow using a
-simple Cisco Packet Tracer topology.
+simple Cisco Packet Tracer topology. Critically, it shows how the human-in-the-loop
+correction mechanism catches an incorrect AI diagnosis and ensures the correct fix
+is applied.
 
 ### 11.1 Topology
 
@@ -461,17 +463,17 @@ PC1 (192.168.10.10) → SW1 (Fa0/1) → R1 (Gi0/0) → Server (172.16.0.100)
 
 - **PC1** — Host in VLAN 10, default gateway 192.168.10.1
 - **SW1** — 2960 switch, Fa0/1 assigned to VLAN 10
-- **R1** — Router with Gi0/0 (192.168.10.1/24) and Gi0/2 (172.16.0.1/16)
-- **Server** — Connected to R1 Gi0/2
+- **R1** — Router with Gi0/0 (192.168.10.1/24) and Gi0/0/1 (172.16.0.1/16)
+- **Server** — Connected to R1 Gi0/0/1
 
 ### 11.2 Broken Configuration
 
-R1 Gi0/2 is administratively down (shutdown). PC1 cannot reach the Server.
+R1 GigabitEthernet0/0/1 is administratively down (shutdown). PC1 cannot reach
+the Server.
 
 ### 11.3 User Submits Symptoms to NetSage
 
-**Symptom:** "PC1 cannot reach Server at 172.16.0.100. PC1 can ping R1
-Gi0/0 (192.168.10.1) but not the server."
+**Symptom:** "PC1 cannot reach Server at 172.16.0.100."
 
 **Show-Command Output:**
 
@@ -479,53 +481,63 @@ Gi0/0 (192.168.10.1) but not the server."
 R1# show ip interface brief
 Interface              IP-Address      OK? Method Status                Protocol
 GigabitEthernet0/0     192.168.10.1    YES manual up                    up
-GigabitEthernet0/2     172.16.0.1      YES manual administratively down down
+GigabitEthernet0/0/1   172.16.0.1      YES manual administratively down down
 ```
 
 ### 11.4 AI Diagnosis (Gemini)
 
+The AI analyzes the input and returns the following diagnosis:
+
 ```json
 {
-  "root_cause": "R1 GigabitEthernet0/2 is administratively down — the interface
-  connecting to the 172.16.0.0/16 network is in shutdown state, preventing all
-  traffic between the 192.168.10.0/24 and 172.16.0.0/16 networks",
-  "confidence": 0.96,
-  "osi_layer": "Layer 1",
+  "root_cause": "VLAN or trunk misconfiguration preventing inter-VLAN routing",
+  "confidence": 0.82,
+  "osi_layer": "Layer 2",
   "evidence": [
-    "Confirmed: show ip interface brief shows Gi0/2 status is administratively down",
-    "Confirmed: PC1 can ping R1 Gi0/0 (192.168.10.1), confirming Layer 3 connectivity within VLAN 10",
-    "Confirmed: Server is on 172.16.0.0/16, reachable only through Gi0/2",
-    "Assumed: No other routing path exists between the two subnets"
+    "PC1 cannot reach the server",
+    "VLAN or trunk issue suspected based on symptoms"
   ],
-  "next_command": "show interfaces GigabitEthernet0/2 | include err|down",
+  "next_command": "show vlan brief",
   "fix_steps": [
-    "Enter interface configuration: configure terminal, interface GigabitEthernet0/2",
-    "Re-enable the port: no shutdown",
-    "Verify: show ip interface brief GigabitEthernet0/2",
-    "Test connectivity: ping 172.16.0.100 from PC1"
+    "Verify VLAN assignments: show vlan brief",
+    "Check trunk allowed VLANs: show interfaces trunk",
+    "Confirm access port VLAN configuration",
+    "Reassign ports if needed: switchport access vlan <id>"
   ]
 }
 ```
 
-**Confidence: 96%** — The show-command output directly confirms the
-administratively down status. This is a high-confidence diagnosis.
+**Confidence: 82%** — The AI inferred a VLAN/trunk problem from the symptom
+description but did not correctly interpret the `show ip interface brief` output,
+which directly shows the interface is administratively down.
 
 ### 11.5 Human Review
 
-The reviewer examines the diagnosis and the evidence. The root cause is correct,
-the confidence is appropriately high, and the fix steps are accurate.
+The reviewer examines the AI's diagnosis against the show-command output. The
+`show ip interface brief` output clearly shows `GigabitEthernet0/0/1` with status
+`administratively down/down` — the interface has been shut down. The AI's VLAN
+ diagnosis does not match the evidence.
 
-**Decision: Accept**
+**Decision: Edit**
+
+- **Corrected root cause:** Router GigabitEthernet0/0/1 is administratively
+  down. The interface connecting to the 172.16.0.0/16 network is in shutdown
+  state, preventing all traffic between the 192.168.10.0/24 and 172.16.0.0/16
+  networks.
+- **Correction explanation:** The AI misinterpreted the show-command output. The
+  `administratively down` status on Gi0/0/1 is clearly visible in the provided
+  output. The fix is a single `no shutdown` command on the interface, not a
+  VLAN or trunk reconfiguration.
 
 The review is recorded with timestamp and linked to the diagnosis.
 
 ### 11.6 Router Fix
 
-The network engineer applies the recommended fix on R1:
+The network engineer applies the corrected fix on R1:
 
 ```
 R1# configure terminal
-R1(config)# interface GigabitEthernet0/2
+R1(config)# interface GigabitEthernet0/0/1
 R1(config-if)# no shutdown
 R1(config-if)# exit
 R1(config)# exit
@@ -533,7 +545,7 @@ R1(config)# exit
 R1# show ip interface brief
 Interface              IP-Address      OK? Method Status                Protocol
 GigabitEthernet0/0     192.168.10.1    YES manual up                    up
-GigabitEthernet0/2     172.16.0.1      YES manual up                    up
+GigabitEthernet0/0/1   172.16.0.1      YES manual up                    up
 ```
 
 ### 11.7 Verification
@@ -541,20 +553,24 @@ GigabitEthernet0/2     172.16.0.1      YES manual up                    up
 ```
 PC1> ping 172.16.0.100
 
+Pinging 172.16.0.100 with 32 bytes of data:
+
 Reply from 172.16.0.100: bytes=32 time=1ms TTL=127
 Reply from 172.16.0.100: bytes=32 time=1ms TTL=127
 Reply from 172.16.0.100: bytes=32 time=1ms TTL=127
 Reply from 172.16.0.100: bytes=32 time=1ms TTL=127
 
-Success rate is 100 percent (4/4)
+Ping statistics for 172.16.0.100:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss)
 ```
 
-Connectivity is restored. The AI diagnosis was accurate, the human review
-validated it, and the fix was applied successfully.
+Connectivity is restored. The AI incorrectly diagnosed a VLAN problem, but the
+human reviewer caught the error, corrected the diagnosis to the actual issue
+(administratively down interface), and the correct fix was applied.
 
 **Note:** The AI does not execute any commands or modify the Packet Tracer
 configuration. The fix is applied manually by the network engineer after human
-review and approval.
+review and correction.
 
 ---
 
